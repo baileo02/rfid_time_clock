@@ -99,4 +99,5 @@ class Database:
 
 if __name__ == '__main__':
 
+    print(os.getenv('db_host'))
     db = Database()
