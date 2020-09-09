@@ -29,6 +29,9 @@ class Model:
 
     def get_id_by_r_id(self, _r_id):
         return self.db.get_id_by_r_id(_r_id)
+        
+    def get_name_by_r_id(self, _r_id):
+        return self.db.get_name_by_r_id(_r_id)
 
     def get_time(self, time_type, _id, _date):
         return self.db.get_time(time_type, _id, _date)

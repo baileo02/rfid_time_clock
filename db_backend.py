@@ -57,6 +57,15 @@ class Database:
             return emp_id[0]
         else:
             return None
+            
+    # RETURN EMPLOYEE NAME GIVEN R_ID
+    def get_name_by_r_id(self, r_id):
+        self.myCursor.execute('SELECT name FROM employee WHERE r_id = %s', (r_id,))
+        emp_name = self.myCursor.fetchone()
+        if emp_name:
+            return emp_name[0]
+        else:
+            return None
 
 
     # INSERTS TIME RECORD FOR CLOCK ON OR CLOCK OFF
