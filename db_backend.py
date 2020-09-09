@@ -20,7 +20,7 @@ class Database:
     def create_tables(self):
         self.myCursor.execute(
             'CREATE TABLE IF NOT EXISTS employee (emp_id INT AUTO_INCREMENT UNIQUE PRIMARY KEY ,'
-            ' name TEXT NOT NULL)')
+            ' name TEXT NOT NULL, r_id TEXT)')
         self.myCursor.execute(
             'CREATE TABLE IF NOT EXISTS timestamp (clock_on TEXT, clock_off TEXT, emp_id INTEGER NOT NULL,'
             ' date DATE, record_id INT PRIMARY KEY AUTO_INCREMENT UNIQUE)')
@@ -48,6 +48,16 @@ class Database:
             return emp_id[0]
         else:
             return None
+
+    # GET EMPLOYEE ID GIVEN R_ID
+    def get_id_by_r_id(self, _r_id):
+        self.myCursor.execute('SELECT emp_id FROM employee WHERE r_id = %s', (_r_id,))
+        emp_id = self.myCursor.fetchone()
+        if emp_id:
+            return emp_id[0]
+        else:
+            return None
+
 
     # INSERTS TIME RECORD FOR CLOCK ON OR CLOCK OFF
     def insert_time_record(self, time_type, _id: int, _date, time_value: str):
@@ -95,9 +105,29 @@ class Database:
         self.myCursor.execute('SELECT name FROM employee')
         return [row[0] for row in self.myCursor if row[0]]
 
+    def get_all_r_id(self):
+        self.myCursor.execute('SELECT r_id FROM employee')
+        return [row[0] for row in self.myCursor if row[0]]
+
+    def get_r_id(self, r_id):
+        self.myCursor.execute('SELECT name FROM employee WHERE r_id = %s', (r_id,))
+        emp_r_id = self.myCursor.fetchone()
+        if emp_r_id:
+            return emp_r_id[0]
+        else:
+            return None
+
+    def update_r_id(self, _id, r_id):
+        self.myCursor.execute('SELECT name FROM employee WHERE emp_id = %s', (_id,))
+        emp_name = self.myCursor.fetchone()
+        if emp_name:    # If record exist
+            self.myCursor.execute(f'UPDATE employee set r_id = %s WHERE emp_id = %s', (r_id, _id))
+            self.mydb.commit()
+        else:
+            raise excep.RecordNotFound(f'Record for employeeID: {_id} does not exist')
+
 
 
 if __name__ == '__main__':
-
-    print(os.getenv('db_host'))
+    import settings
     db = Database()

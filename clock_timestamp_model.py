@@ -21,12 +21,14 @@ class Model:
     def get_current_time():
         return datetime.today().strftime('%H:%M')
 
-
     def get_name_by_id(self, _id):
         return self.db.get_name_by_id(_id)
 
     def get_id_by_name(self, _name):
         return self.db.get_id_by_name(_name)
+
+    def get_id_by_r_id(self, _r_id):
+        return self.db.get_id_by_r_id(_r_id)
 
     def get_time(self, time_type, _id, _date):
         return self.db.get_time(time_type, _id, _date)
@@ -82,3 +84,13 @@ class Model:
     def set_time_record(self, time_type, _id, _date, time_value):
         self.db.update_time_record(time_type, _id, _date, time_value)
 
+    def get_r_id(self, r_id):
+        return self.db.get_r_id(r_id)
+
+    def set_r_id(self, _id, r_id):
+        self.db.update_r_id(_id, r_id)
+
+if __name__ == '__main__':
+    import settings
+    m = Model()
+    # print(m.get_r_id(''))
