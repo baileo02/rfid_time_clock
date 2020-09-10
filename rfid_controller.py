@@ -41,18 +41,17 @@ class RfidController:
 
         self.model = Model()
         self.running = True
-        self.default = True
         self.display_lcd_default()
+    
+    def alert(self):
+        GPIO.setup(16, GPIO.OUT)
+        GPIO.output(16, GPIO.HIGH)
+        sleep(0.5)
+        GPIO.output(16,GPIO.LOW)        
+        GPIO.cleanup()  
         
-    # Capture SIGINT for cleanup when the script is aborted
-    def end_read(signal,frame):
-        print ("Ctrl+C captured, ending read.")
-        self.running = False
-        GPIO.cleanup()
-
     def run_rfid(self):
         
-        signal.signal(signal.SIGINT, self.end_read)
         MIFAREReader = MFRC522.MFRC522()
         
         while self.running:
@@ -60,6 +59,7 @@ class RfidController:
             (status, TagType) = MIFAREReader.MFRC522_Request(MIFAREReader.PICC_REQIDL) # scan for card
             if status == MIFAREReader.MI_OK:    # if card is found
                 print('card detected')
+                #self.alert()#todo buzzer gpio is messing with the RFID GPIO
             (status, r_id) = MIFAREReader.MFRC522_Anticoll()  # get uid
             r_id = ''.join([str(a) for a in r_id])
             if status == MIFAREReader.MI_OK:    # if we have the uid
@@ -67,7 +67,7 @@ class RfidController:
                     state = self.user_state(r_id)   # Checks user's clock on/off status
                     if not state:   # Employee not clocked today.
                         self.clock_on(r_id)         # Clock employee in
-                        message = 'Welcome '
+                        message = 'Hi '
                     elif state == 'CLOCKED ON':     # Employee clocked on
                         self.clock_off(r_id)
                         message = 'See you '
@@ -76,15 +76,19 @@ class RfidController:
                     else:
                         message = 'Error'
                     self.display_lcd(self.model.get_name_by_r_id(r_id), message)
-                    
+                    self.model.db.mydb.commit()
                 else:
-                    print('Card does not exist')
+                    self.display_lcd('Error!', 'Card does not exist')
+            
 
 
     def user_state(self, r_id):
         emp_id = self.model.get_id_by_r_id(r_id)
-        clocked_on = self.model.get_time('clock_on', emp_id, self.model.get_current_date())
-        clocked_off = self.model.get_time('clock_off', emp_id, self.model.get_current_date())
+        clocked_on = self.model.get_time('clock_on', emp_id, datetime.now().strftime('%Y-%m-%d'))
+        clocked_off = self.model.get_time('clock_off', emp_id, datetime.now().strftime('%Y-%m-%d'))
+        print(clocked_on)
+        print(clocked_off)
+        
         if clocked_on and clocked_off:
             return 'CLOCKED OFF'
         elif not clocked_on and not clocked_off:
@@ -117,29 +121,25 @@ class RfidController:
                 self.running = False
                 
     def display_lcd_default(self):
-        try:
-            self.mcp.output(3,1)
-            self.lcd.begin(16,2)
-            while (self.default):
-                self.lcd.clear()
-                self.lcd.setCursor(5,0)
-                self.lcd.message(datetime.now().strftime('%H:%M:%S'))
-                sleep(1)
-                
+        self.mcp.output(3,1)
+        self.lcd.begin(16,2)
+        self.lcd.clear()
+        self.lcd.setCursor(2,0)
+        self.lcd.message('READY TO SCAN')
+        
+    
     def display_lcd(self, name, message):
         try:
-            self.default = False
             self.mcp.output(3,1)     # turn on LCD backlight
             self.lcd.begin(16,2)     # set number of LCD lines and columns
             self.lcd.clear()
             self.lcd.setCursor(0,0)  # set cursor position
-            self.lcd.message(message + '\n')
-            self.lcd.message(name)
+            self.lcd.message(message + name.capitalize() + '\n')
+            self.lcd.message('Time now: ' + datetime.now().strftime('%H:%M'))
             sleep(5)
             self.lcd.clear()
         finally:
             GPIO.cleanup()
-            self.default = True
             self.display_lcd_default()
 
 if __name__ == '__main__':
@@ -147,4 +147,7 @@ if __name__ == '__main__':
     r = RfidController()
     r.run_rfid()
     # r.attach_rfid_card()
+    #todo if user forgets to sign off, and date changes user cannot clock back in again 
+    #todo unless app is restarted. need to refresh the db.
+
 
