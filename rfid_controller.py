@@ -8,7 +8,7 @@ from PCF8574 import PCF8574_GPIO
 from Adafruit_LCD1602 import Adafruit_CharLCD
 from time import sleep
 from clock_timestamp_model import Model
-
+from datetime import datetime
 
 class RfidController:
     """
@@ -41,12 +41,13 @@ class RfidController:
 
         self.model = Model()
         self.running = True
+        self.default = True
+        self.display_lcd_default()
         
     # Capture SIGINT for cleanup when the script is aborted
     def end_read(signal,frame):
-        global continue_reading
         print ("Ctrl+C captured, ending read.")
-        continue_reading = False
+        self.running = False
         GPIO.cleanup()
 
     def run_rfid(self):
@@ -75,6 +76,7 @@ class RfidController:
                     else:
                         message = 'Error'
                     self.display_lcd(self.model.get_name_by_r_id(r_id), message)
+                    
                 else:
                     print('Card does not exist')
 
@@ -113,25 +115,36 @@ class RfidController:
                 self.model.set_r_id(emp_id, r_id)
                 print(f'Added {r_id} to {emp_name}')
                 self.running = False
-
+                
+    def display_lcd_default(self):
+        try:
+            self.mcp.output(3,1)
+            self.lcd.begin(16,2)
+            while (self.default):
+                self.lcd.clear()
+                self.lcd.setCursor(5,0)
+                self.lcd.message(datetime.now().strftime('%H:%M:%S'))
+                sleep(1)
+                
     def display_lcd(self, name, message):
         try:
+            self.default = False
             self.mcp.output(3,1)     # turn on LCD backlight
             self.lcd.begin(16,2)     # set number of LCD lines and columns
-            while(True):         
-                self.lcd.clear()
-                self.lcd.setCursor(0,0)  # set cursor position
-                self.lcd.message(message + '\n')
-                self.lcd.message(name)
-                sleep(5)
-                self.lcd.clear()
-                break
+            self.lcd.clear()
+            self.lcd.setCursor(0,0)  # set cursor position
+            self.lcd.message(message + '\n')
+            self.lcd.message(name)
+            sleep(5)
+            self.lcd.clear()
         finally:
             GPIO.cleanup()
+            self.default = True
+            self.display_lcd_default()
 
 if __name__ == '__main__':
     import settings
     r = RfidController()
-    # r.run_rfid()
+    r.run_rfid()
     # r.attach_rfid_card()
 
