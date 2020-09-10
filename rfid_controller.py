@@ -24,6 +24,7 @@ class RfidController:
     attach_rfid_card(): Used to assign rfid tags to employees' r_id field.
     """
     def __init__(self):
+        # Start LCD function
         PCF8574_address = 0x27  # I2C address of the PCF8574 chip.
         PCF8574A_address = 0x3F  # I2C address of the PCF8574A chip.
         # Create PCF8574 GPIO adapter.
@@ -55,23 +56,25 @@ class RfidController:
         
         while self.running:
             r_id = None
-            (status,TagType) = MIFAREReader.MFRC522_Request(MIFAREReader.PICC_REQIDL) # scan for card
+            (status, TagType) = MIFAREReader.MFRC522_Request(MIFAREReader.PICC_REQIDL) # scan for card
             if status == MIFAREReader.MI_OK:    # if card is found
                 print('card detected')
-            (status,r_id) = MIFAREReader.MFRC522_Anticoll()  # get uid
-            r_id = str(r_id)
+            (status, r_id) = MIFAREReader.MFRC522_Anticoll()  # get uid
+            r_id = ''.join([str(a) for a in r_id])
             if status == MIFAREReader.MI_OK:    # if we have the uid
                 if self.model.get_r_id(r_id):       # Check if card is attached to an employee
                     state = self.user_state(r_id)   # Checks user's clock on/off status
-                    if not state:                   # Employee not clocked today.
+                    if not state:   # Employee not clocked today.
                         self.clock_on(r_id)         # Clock employee in
-                        self.display_lcd(self.model.get_name_by_r_id(r_id), r_id)
+                        message = 'Welcome '
                     elif state == 'CLOCKED ON':     # Employee clocked on
                         self.clock_off(r_id)
-                        self.display_lcd(self.model.get_name_by_r_id(r_id), r_id)
+                        message = 'See you '
                     elif state == 'CLOCKED OFF':
-                        print('Employee already clocked on and off today')
-                        self.display_lcd(self.model.get_name_by_r_id(r_id), r_id)
+                        message = 'Already clocked off '
+                    else:
+                        message = 'Error'
+                    self.display_lcd(self.model.get_name_by_r_id(r_id), message)
                 else:
                     print('Card does not exist')
 
@@ -96,30 +99,30 @@ class RfidController:
         self.model.set_time_record('clock_off', emp_id, self.model.get_current_date(), self.model.get_current_time())
 
     def attach_rfid_card(self):
-        emp_id = input('Attach to which employee')
+        emp_name = input('Attach to which employee')
         signal.signal(signal.SIGINT, self.end_read)
         MIFAREReader = MFRC522.MFRC522()
         while self.running:
-            (status,TagType) = MIFAREReader.MFRC522_Request(MIFAREReader.PICC_REQIDL) # scan for card
+            (status, TagType) = MIFAREReader.MFRC522_Request(MIFAREReader.PICC_REQIDL) # scan for card
             if status == MIFAREReader.MI_OK:    # if card is found
                 print('card detected')
-            (status,r_id) = MIFAREReader.MFRC522_Anticoll()  # get uid
-            r_id = str(r_id)
+            (status, r_id) = MIFAREReader.MFRC522_Anticoll()  # get rfid tag id
+            r_id = ''.join([str(a) for a in r_id])      # store the list of integers as one string.
             if status == MIFAREReader.MI_OK:
-                tag_id = r_id
-                self.model.set_r_id(emp_id, tag_id)
-                print(f'Added {tag_id} to {emp_id}')
+                emp_id = self.model.get_id_by_name(emp_name)
+                self.model.set_r_id(emp_id, r_id)
+                print(f'Added {r_id} to {emp_name}')
                 self.running = False
 
-    def display_lcd(self, name, r_id):
+    def display_lcd(self, name, message):
         try:
             self.mcp.output(3,1)     # turn on LCD backlight
             self.lcd.begin(16,2)     # set number of LCD lines and columns
             while(True):         
                 self.lcd.clear()
                 self.lcd.setCursor(0,0)  # set cursor position
-                self.lcd.message(name + '\n')
-                self.lcd.message(r_id)
+                self.lcd.message(message + '\n')
+                self.lcd.message(name)
                 sleep(5)
                 self.lcd.clear()
                 break
@@ -129,6 +132,6 @@ class RfidController:
 if __name__ == '__main__':
     import settings
     r = RfidController()
-    r.run_rfid()
+    # r.run_rfid()
     # r.attach_rfid_card()
 
