@@ -1,12 +1,13 @@
 #!/usr/bin/python3
 # -*- coding: utf8 -*-
 
+from time import sleep
+sleep(5)
 import RPi.GPIO as GPIO
 import MFRC522
 import signal
 from PCF8574 import PCF8574_GPIO
 from Adafruit_LCD1602 import Adafruit_CharLCD
-from time import sleep
 from clock_timestamp_model import Model
 from datetime import datetime
 
