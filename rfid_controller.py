@@ -107,7 +107,6 @@ class RfidController:
 
     def attach_rfid_card(self):
         emp_name = input('Attach to which employee')
-        signal.signal(signal.SIGINT, self.end_read)
         MIFAREReader = MFRC522.MFRC522()
         while self.running:
             (status, TagType) = MIFAREReader.MFRC522_Request(MIFAREReader.PICC_REQIDL) # scan for card
@@ -148,7 +147,5 @@ if __name__ == '__main__':
     r = RfidController()
     r.run_rfid()
     # r.attach_rfid_card()
-    #todo if user forgets to sign off, and date changes user cannot clock back in again 
-    #todo unless app is restarted. need to refresh the db.
 
 
